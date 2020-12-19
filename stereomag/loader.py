@@ -30,8 +30,8 @@ flags.DEFINE_integer('image_height', 256, 'Image height in pixels.')
 flags.DEFINE_integer('image_width', 256, 'Image width in pixels.')
 
 flags.DEFINE_integer('sequence_length', 10, 'Sequence length for each example.')
-flags.DEFINE_integer('min_stride', 3, 'Minimum stride for sequence.')
-flags.DEFINE_integer('max_stride', 10, 'Maximum stride for sequence.')
+flags.DEFINE_integer('min_stride', 1, 'Minimum stride for sequence.')
+flags.DEFINE_integer('max_stride', 1, 'Maximum stride for sequence.')
 
 flags.DEFINE_float('augment_min_scale', 1.0,
                    'Minimum scale for data augmentation.')

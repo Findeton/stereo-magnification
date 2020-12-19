@@ -290,8 +290,7 @@ def load_image_data(base_path, height, width, parallel_image_reads):
 
   def mapper(sequence):
     images = tf.contrib.data.get_single_element(
-        tf.data.Dataset.from_tensor_slices(sequence.id + '/' + sequence.id +
-                                           '_' + sequence.timestamp + '.jpg')
+        tf.data.Dataset.from_tensor_slices(sequence.id + '/' + sequence.timestamp + '.jpg')
         .map(load_single_image, num_parallel_calls=parallel_image_reads).batch(
             tf.to_int64(sequence.length())))
     return ViewSequence(sequence.id, sequence.timestamp, sequence.intrinsics,

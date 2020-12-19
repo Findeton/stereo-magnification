@@ -18,7 +18,7 @@ import collections
 import math
 import os.path
 import tensorflow as tf
-import utils
+import stereomag.utils as utils
 
 
 class ViewSequence(
@@ -139,7 +139,7 @@ class ViewSequence(
     if max_stride == min_stride:
       stride = min_stride
     else:
-      stride = tf.random_uniform(
+      stride = tf.compat.v1.random_uniform(
           [], minval=min_stride, maxval=max_stride + 1, dtype=tf.int32)
 
     # Now pick the starting index.
@@ -147,19 +147,19 @@ class ViewSequence(
     # index i + (length - 1) * stride, which must be less than the length of
     # the sequence. Therefore i must be less than maxval, where:
     maxval = self.length() - (length - 1) * stride
-    index = tf.random_uniform([], maxval=maxval, dtype=tf.int32)
+    index = tf.compat.v1.random_uniform([], maxval=maxval, dtype=tf.int32)
     return self.subsequence(
         index, index + 1 + (length - 1) * stride, stride=stride)
 
   def random_reverse(self):
     """Returns either the sequence or its reverse, with equal probability."""
-    uniform_random = tf.random_uniform([], 0, 1.0)
-    condition = tf.less(uniform_random, 0.5)
-    return tf.cond(condition, lambda: self, lambda: self.reverse())  # pylint: disable=unnecessary-lambda
+    uniform_random = tf.compat.v1.random_uniform([], 0, 1.0)
+    condition = tf.compat.v1.less(uniform_random, 0.5)
+    return tf.compat.v1.cond(condition, lambda: self, lambda: self.reverse())  # pylint: disable=unnecessary-lambda
 
   def deterministic_reverse(self):
     """Returns either the sequence or its reverse, based on the sequence id."""
-    return tf.cond(
+    return tf.compat.v1.cond(
         self.hash_in_range(2, 0, 1), lambda: self, lambda: self.reverse())  # pylint: disable=unnecessary-lambda
 
   def random_scale_and_crop(self, min_scale, max_scale, height, width):
@@ -181,16 +181,16 @@ class ViewSequence(
     if min_scale == 1.0 and max_scale == 1.0:
       scaled_image = self.image
     else:
-      input_size = tf.to_float(tf.shape(self.image)[-3:-1])
-      scale_factor = tf.random_uniform([2], min_scale, max_scale)
-      scaled_image = tf.image.resize_area(
-          self.image, tf.to_int32(input_size * scale_factor))
+      input_size = tf.compat.v1.to_float(tf.shape(self.image)[-3:-1])
+      scale_factor = tf.compat.v1.random_uniform([2], min_scale, max_scale)
+      scaled_image = tf.compat.v1.image.resize_area(
+          self.image, tf.compat.v1.to_int32(input_size * scale_factor))
 
     # Choose crop offset
     scaled_size = tf.shape(scaled_image)[-3:-1]
     offset_limit = scaled_size - [height, width] + 1
-    offset_y = tf.random_uniform([], 0, offset_limit[0], dtype=tf.int32)
-    offset_x = tf.random_uniform([], 0, offset_limit[1], dtype=tf.int32)
+    offset_y = tf.compat.v1.random_uniform([], 0, offset_limit[0], dtype=tf.int32)
+    offset_x = tf.compat.v1.random_uniform([], 0, offset_limit[1], dtype=tf.int32)
 
     image, intrinsics = crop_image_and_adjust_intrinsics(
         scaled_image, self.intrinsics, offset_y, offset_x, height, width)
@@ -199,8 +199,8 @@ class ViewSequence(
   def hash_in_range(self, buckets, base, limit):
     """Return true if the hashed id falls in the range [base, limit)."""
     hash_bucket = tf.string_to_hash_bucket_fast(self.id, buckets)
-    return tf.logical_and(
-        tf.greater_equal(hash_bucket, base), tf.less(hash_bucket, limit))
+    return tf.compat.v1.logical_and(
+        tf.compat.v1.greater_equal(hash_bucket, base), tf.compat.v1.less(hash_bucket, limit))
 
 
 def read_file_lines(filename, max_lines=10000):
@@ -217,10 +217,10 @@ def read_file_lines(filename, max_lines=10000):
     The lines of the file, as a 1-dimensional string tensor.
   """
   lines = (
-      tf.data.TextLineDataset(filename)
-      .filter(lambda line: tf.not_equal(tf.substr(line, 0, 1), '#'))
+      tf.compat.v1.data.TextLineDataset(filename)
+      .filter(lambda line: tf.compat.v1.not_equal(tf.compat.v1.substr(line, 0, 1), '#'))
       .batch(max_lines).take(1))
-  return tf.contrib.data.get_single_element(lines)
+  return tf.data.experimental.get_single_element(lines)
 
 
 def parse_camera_lines(lines):
@@ -237,11 +237,11 @@ def parse_camera_lines(lines):
   # Column number:                  0         1  2  3  4  5  6  7-10 11-14 15-18
   youtube_url = lines[0]
   record_defaults = ([['']] + [[0.0]] * 18)
-  data = tf.decode_csv(lines[1:], record_defaults, field_delim=' ')
+  data = tf.compat.v1.decode_csv(lines[1:], record_defaults, field_delim=' ')
 
-  with tf.control_dependencies([
+  with tf.compat.v1.control_dependencies([
       # We don't accept non-zero k1 and k2.
-      tf.assert_equal(data[5:6], 0.0)
+      tf.compat.v1.assert_equal(data[5:6], 0.0)
   ]):
     timestamps = data[0]
     intrinsics = tf.stack(data[1:5], axis=1)
@@ -254,7 +254,7 @@ def parse_camera_lines(lines):
   # In camera files, the video id is the last part of the YouTube URL, it comes
   # after the =. It seems hacky to use decode_csv but it's easier than
   # string_split because that returns a sparse tensor.
-  youtube_id = tf.decode_csv([youtube_url], [[''], ['']], field_delim='=')[1][0]
+  youtube_id = tf.compat.v1.decode_csv([youtube_url], [[''], ['']], field_delim='=')[1][0]
   return ViewSequence(youtube_id, timestamps, intrinsics, poses, images)
 
 
@@ -277,23 +277,22 @@ def load_image_data(base_path, height, width, parallel_image_reads):
 
   def load_single_image(filename):
     """Load and size a single image from a given filename."""
-    contents = tf.read_file(base_path + '/' + filename)
-    image = tf.image.convert_image_dtype(
-        tf.image.decode_image(contents), tf.float32)
+    contents = tf.compat.v1.read_file(base_path + '/' + filename)
+    image = tf.compat.v1.image.convert_image_dtype(
+        tf.compat.v1.image.decode_image(contents), tf.float32)
     # Unfortunately resize_area expects batched images, so add a dimension,
     # resize, and then remove it again.
     resized = tf.squeeze(
-        tf.image.resize_area(tf.expand_dims(image, axis=0), [height, width]),
+        tf.compat.v1.image.resize_area(tf.expand_dims(image, axis=0), [height, width]),
         axis=0)
     resized.set_shape([height, width, 3])  # RGB images have 3 channels.
     return resized
 
   def mapper(sequence):
-    images = tf.contrib.data.get_single_element(
-        tf.data.Dataset.from_tensor_slices(sequence.id + '/' + sequence.id +
-                                           '_' + sequence.timestamp + '.jpg')
+    images = tf.data.experimental.get_single_element(
+        tf.data.Dataset.from_tensor_slices(sequence.id + '/' + sequence.timestamp + '.jpg')
         .map(load_single_image, num_parallel_calls=parallel_image_reads).batch(
-            tf.to_int64(sequence.length())))
+            tf.compat.v1.to_int64(sequence.length())))
     return ViewSequence(sequence.id, sequence.timestamp, sequence.intrinsics,
                         sequence.pose, images)
 
@@ -316,7 +315,7 @@ def crop_image_and_adjust_intrinsics(
     [..., height, width, C] cropped images,
     [..., 4] adjusted intrinsics
   """
-  shape = tf.to_float(tf.shape(image))
+  shape = tf.compat.v1.to_float(tf.shape(image))
   original_height = shape[-3]
   original_width = shape[-2]
 
@@ -326,10 +325,10 @@ def crop_image_and_adjust_intrinsics(
       original_width, original_height, original_width, original_height])
   cropped_pixel_intrinsics = (
       pixel_intrinsics - tf.stack(
-          [0.0, 0.0, tf.to_float(offset_x), tf.to_float(offset_y)]))
+          [0.0, 0.0, tf.compat.v1.to_float(offset_x), tf.compat.v1.to_float(offset_y)]))
   cropped_intrinsics = (
       cropped_pixel_intrinsics
-      / tf.to_float(tf.stack([width, height, width, height])))
+      / tf.compat.v1.to_float(tf.stack([width, height, width, height])))
   cropped_images = tf.image.crop_to_bounding_box(
       image, offset_y, offset_x, height, width)
   return cropped_images, cropped_intrinsics

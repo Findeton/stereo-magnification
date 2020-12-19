@@ -22,7 +22,7 @@ import time
 import tensorflow as tf
 import geometry.projector as pj
 from third_party.vgg import build_vgg19
-from nets import mpi_net
+from stereomag.nets import mpi_net
 
 
 class MPI(object):
@@ -318,6 +318,7 @@ class MPI(object):
       save_latest_freq: Frequency of model saving (overwrites old one)
       max_steps: maximum training steps
     """
+    import pdb; pdb.set_trace()
     parameter_count = tf.reduce_sum(
         [tf.reduce_prod(tf.shape(v)) for v in tf.trainable_variables()])
     global_step = tf.Variable(0, name='global_step', trainable=False)

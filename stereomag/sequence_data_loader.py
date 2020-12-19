@@ -19,9 +19,9 @@ from __future__ import division
 
 import os.path
 import tensorflow as tf
-from tensorflow import flags
-import datasets
-import loader
+from tensorflow.python.platform import flags
+import stereomag.datasets as datasets
+import stereomag.loader as loader
 
 FLAGS = flags.FLAGS
 
@@ -97,12 +97,12 @@ class SequenceDataLoader(object):
       return intrinsics
 
     def format_sequence(sequence):
-      tgt_idx = tf.random_uniform(
+      tgt_idx = tf.compat.v1.random_uniform(
           [],
           maxval=self.shuffle_seq_length,
           dtype=tf.int32,
           seed=self.random_seed)
-      shuffled_inds = tf.random_shuffle(
+      shuffled_inds = tf.compat.v1.random_shuffle(
           tf.range(self.shuffle_seq_length), seed=self.random_seed)
       src_inds = shuffled_inds[:self.num_source]
       ref_idx = src_inds[0]

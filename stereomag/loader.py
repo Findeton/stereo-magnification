@@ -20,8 +20,8 @@ additional options.
 """
 import os.path
 import tensorflow as tf
-from tensorflow import flags
-import datasets
+from tensorflow.python.platform import flags
+import stereomag.datasets as datasets
 
 flags.DEFINE_integer('epochs', -1,
                      'Epochs of training data, or -1 to continue indefinitely.')
@@ -193,12 +193,12 @@ def create_from_flags(cameras_glob='train/????????????????.txt',
                       training=True,
                       map_function=None):
   """Convenience function to return a Loader configured by flags."""
-  assert tf.gfile.IsDirectory(image_dir)  # Ensure the provided path is valid.
-  assert tf.gfile.ListDirectory(image_dir) > 0  # Ensure that some data exists.
+  assert tf.compat.v1.gfile.IsDirectory(image_dir)  # Ensure the provided path is valid.
+  assert len(tf.compat.v1.gfile.ListDirectory(image_dir)) > 0  # Ensure that some data exists.
   parallelism = 10
 
-  assert tf.gfile.Glob(cameras_glob)
-  files = tf.data.Dataset.list_files(cameras_glob, False)
+  assert tf.compat.v1.gfile.Glob(cameras_glob)
+  files = tf.compat.v1.data.Dataset.list_files(cameras_glob, False)
   lines = files.map(datasets.read_file_lines, num_parallel_calls=parallelism)
   sequences = lines.map(
       datasets.parse_camera_lines, num_parallel_calls=parallelism)

@@ -22,7 +22,7 @@ from __future__ import division
 from __future__ import print_function
 import tensorflow as tf
 
-import geometry.sampling
+import geometry.sampling as sampling
 
 
 def divide_safe(num, den, name=None):

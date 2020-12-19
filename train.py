@@ -17,13 +17,16 @@
 """
 from __future__ import division
 import tensorflow as tf
+tf.config.run_functions_eagerly(True)
+tf.compat.v1.enable_eager_execution()
+tf.executing_eagerly()
 
 from stereomag.sequence_data_loader import SequenceDataLoader
 from stereomag.mpi import MPI
 
 # Note that the flags below are a subset of all flags. The remainder (data
 # loading relevant) are defined in loader.py.
-flags = tf.app.flags
+flags = tf.compat.v1.app.flags  # tf.app.flags
 flags.DEFINE_string('checkpoint_dir', 'checkpoints',
                     'Location to save the models.')
 flags.DEFINE_string('cameras_glob', 'train/????????????????.txt',
@@ -68,11 +71,11 @@ FLAGS = flags.FLAGS
 
 
 def main(_):
-  tf.logging.set_verbosity(tf.logging.INFO)
-  tf.set_random_seed(FLAGS.random_seed)
+  tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.INFO)
+  tf.compat.v1.set_random_seed(FLAGS.random_seed)
   FLAGS.checkpoint_dir += '/%s/' % FLAGS.experiment_name
-  if not tf.gfile.IsDirectory(FLAGS.checkpoint_dir):
-    tf.gfile.MakeDirs(FLAGS.checkpoint_dir)
+  if not tf.compat.v1.gfile.IsDirectory(FLAGS.checkpoint_dir):
+    tf.compat.v1.gfile.MakeDirs(FLAGS.checkpoint_dir)
 
   # Set up data loader
   data_loader = SequenceDataLoader(FLAGS.cameras_glob, FLAGS.image_dir, True,
@@ -90,4 +93,4 @@ def main(_):
 
 
 if __name__ == '__main__':
-  tf.app.run()
+  tf.compat.v1.app.run() # tf.app.run()

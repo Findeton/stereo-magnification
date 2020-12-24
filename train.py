@@ -17,6 +17,7 @@
 """
 from __future__ import division
 import tensorflow as tf
+tf.disable_eager_execution()
 
 from stereomag.sequence_data_loader import SequenceDataLoader
 from stereomag.mpi import MPI
